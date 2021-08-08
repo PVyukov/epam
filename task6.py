@@ -11,79 +11,79 @@ os.environ["AWS_ACCESS_KEY_ID"] = "testing"
 os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
 os.environ["AWS_SECURITY_TOKEN"] = "testing"
 os.environ["AWS_SESSION_TOKEN"] = "testing"
-
-Faker.seed(0)  # <- determination, baby!
-fake = Faker()
-
-
-def tagify(d: Dict[str, str]) -> List[Dict[str, str]]:
-    """
-    Converts python dict back into AWS repr of tags
-    :param d: dict of tags
-    :return: AWS repr of tags
-    """
-    return [{"Key": k, "Value": v} for k, v in d.items()]
-
-
-@dataclasses.dataclass  # <- more info https://docs.python.org/3/library/dataclasses.html
-class Project:
-    name: str
-    tags: Dict[str, str] = dataclasses.field(default_factory=dict)
-    num_instances: int = 1
-
-    def create_default_tags(self):
-        return {
-            "Name": self.name,
-            "Created": fake.date_this_month().isoformat(),
-            "Owner": fake.name(),
-            "Ticket": f"Devops-{fake.pyint(0, 6000)}",
-        }
-
-    def __hash__(self) -> int:
-        return hash(self.name)
-
-    def __post_init__(self):
-        # this is dataclass specific post-init method
-        self.tags.update(self.create_default_tags())
-
-    def create(self, once=True):
-        ec2 = boto3.client("ec2", region_name="eu-west-1", endpoint_url="http://localhost:5000")
-        ec2_res = boto3.resource("ec2", region_name="eu-west-1", endpoint_url="http://localhost:5000")
-        if once:
-            if any(ec2_res.images.filter(Filters=[{"Name": "name", "Values": [f"{self.name}"]}])):
-                print(f"already registered image {self.name}, that means instances are created too")
-                return
-
-        ami_id = ec2.register_image(Name=self.name, Description=self.name)["ImageId"]
-
-        for _ in range(self.num_instances):
-            ec2_res.create_instances(
-                ImageId=ami_id,
-                MaxCount=1,
-                MinCount=1,
-                InstanceType="m5.large",
-                TagSpecifications=[
-                    {
-                        "Tags": tagify(self.tags),
-                        "ResourceType": "instance",
-                    }
-                ],
-            )
-
-
-projects = [
-    Project("Jenkins"),
-    Project("S3 exporter", {"Env": "dev"}, 3),
-    Project("Thumbnail compressor", {"Env": "Dev", "Team": "Team Rocket"}, 5),
-    Project("Sonarqube", {"Team": "Devops"}, 2),
-    Project("Uncategorized", num_instances=5),
-]
-
-for proj in projects:
-    proj.create()
-p = Project("Test", {"Env": "test"}, 3)
-p.tags.pop("Owner")
-p.create()
+#
+# Faker.seed(0)  # <- determination, baby!
+# fake = Faker()
+#
+#
+# def tagify(d: Dict[str, str]) -> List[Dict[str, str]]:
+#     """
+#     Converts python dict back into AWS repr of tags
+#     :param d: dict of tags
+#     :return: AWS repr of tags
+#     """
+#     return [{"Key": k, "Value": v} for k, v in d.items()]
+#
+#
+# @dataclasses.dataclass  # <- more info https://docs.python.org/3/library/dataclasses.html
+# class Project:
+#     name: str
+#     tags: Dict[str, str] = dataclasses.field(default_factory=dict)
+#     num_instances: int = 1
+#
+#     def create_default_tags(self):
+#         return {
+#             "Name": self.name,
+#             "Created": fake.date_this_month().isoformat(),
+#             "Owner": fake.name(),
+#             "Ticket": f"Devops-{fake.pyint(0, 6000)}",
+#         }
+#
+#     def __hash__(self) -> int:
+#         return hash(self.name)
+#
+#     def __post_init__(self):
+#         # this is dataclass specific post-init method
+#         self.tags.update(self.create_default_tags())
+#
+#     def create(self, once=True):
+#         ec2 = boto3.client("ec2", region_name="eu-west-1", endpoint_url="http://localhost:5000")
+#         ec2_res = boto3.resource("ec2", region_name="eu-west-1", endpoint_url="http://localhost:5000")
+#         if once:
+#             if any(ec2_res.images.filter(Filters=[{"Name": "name", "Values": [f"{self.name}"]}])):
+#                 print(f"already registered image {self.name}, that means instances are created too")
+#                 return
+#
+#         ami_id = ec2.register_image(Name=self.name, Description=self.name)["ImageId"]
+#
+#         for _ in range(self.num_instances):
+#             ec2_res.create_instances(
+#                 ImageId=ami_id,
+#                 MaxCount=1,
+#                 MinCount=1,
+#                 InstanceType="m5.large",
+#                 TagSpecifications=[
+#                     {
+#                         "Tags": tagify(self.tags),
+#                         "ResourceType": "instance",
+#                     }
+#                 ],
+#             )
+#
+#
+# projects = [
+#     Project("Jenkins"),
+#     Project("S3 exporter", {"Env": "dev"}, 3),
+#     Project("Thumbnail compressor", {"Env": "Dev", "Team": "Team Rocket"}, 5),
+#     Project("Sonarqube", {"Team": "Devops"}, 2),
+#     Project("Uncategorized", num_instances=5),
+# ]
+#
+# for proj in projects:
+#     proj.create()
+# p = Project("Test", {"Env": "test"}, 3)
+# p.tags.pop("Owner")
+# p.create()
 
 
 class Homework:

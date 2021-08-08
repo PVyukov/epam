@@ -91,9 +91,11 @@ class Homework:
     You can use low-level client or high level client and return list of instance classes if you've used high-level one
     and list of instance' dictionaries in case of low-level client
     """
+
     def __init__(self):
-        ec2 = boto3.client("ec2", region_name="eu-west-1", endpoint_url="http://localhost:5000")
-        ec2_res = boto3.resource("ec2", region_name="eu-west-1", endpoint_url="http://localhost:5000")
+        # self.ec2 = boto3.client("ec2", region_name="eu-west-1", endpoint_url="http://localhost:5000")
+        self.ec2_res = boto3.resource("ec2", region_name="eu-west-1", endpoint_url="http://localhost:5000")
+
     def find_by_tag(self, tag_name, tag_value):
         """This method should return instances that have `tag_name` == `tag_value`
 
@@ -101,23 +103,61 @@ class Homework:
             tag_name ([type]): [description]
             tag_value ([type]): [description]
         """
-        pass
+        # THe first variant (without filter method)
+        # return_instances = []
+        # instances = self.ec2_res.instances.all()
+        # for instance in instances:
+        #     for tag in instance.tags:
+        #         # print(tag)
+        #         if tag.get('Key') == tag_name and tag.get('Value') == tag_value:
+        #             return_instances.append(instance)
+        #             break
+        # return return_instances
+        return self.ec2_res.instances.filter(
+            Filters=[
+                {
+                    'Name': f'tag:{tag_name}',
+                    'Values': [f'{tag_value}']
+                }
+            ]
+        )
 
     def list_all_owners(self):
         """This method should list all owners of all instances from instance's tag "Owner"
         Caveat: Owner might be listed only once!
         """
-        pass
+        # Yes, it cloud be run with filter but I did it without it.
+        return_owners = []
+        instances = self.ec2_res.instances.all()
+        for instance in instances:
+            for tag in instance.tags:
+                if tag.get('Key') == 'Owner':
+                    return_owners.append(tag.get('Value'))
+        return set(return_owners)
+
 
     def list_old_amis(self, threshold_days=30):
         """This method should return all AMI images that are older than `threshold_days` days (use datetime.timedelta and datetime.fromisoformat)
         see https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat
         """
-        pass
-
+        return_old_images = []
+        images = self.ec2_res.images.all()
+        present = datetime.now()
+        past = present - timedelta(days=threshold_days)
+        for image in images:
+            create_time = datetime.fromisoformat(image.creation_date[:-1])
+            if create_time <= past:
+                return_old_images = return_old_images.append(image)
+        return return_old_images
     def find_jenkins(self):
         """This method should use boto3 and return instances that have tag "Project" == "Jenkins" """
-        pass
+        return self.ec2_res.instances.filter(Filters=[{'Name': f'tag:Project', 'Values': ['Jenkins']}]
+        )
+
+
+# "My tests"
+# hw = Homework()
+# print(hw.list_old_amis())
 
 
 class Homework6Test(unittest.TestCase):

@@ -1,0 +1,99 @@
+---
+# -Первый play устанавливает awscli, создает файл с именем “awscli_installed” и с помощью модуля shell кладет созданный файл в S3 бакет
+- name: Update first aws server
+  hosts: aws_first_server
+  become: yes
+  remote_user: ubuntu
+  become_user: root
+  
+  tasks:
+    - name: Update all packages to their latest version
+      apt:
+        name: "*"
+        force_apt_get: yes
+        state: latest
+        update_cache: yes
+    
+    - name: Install dependencies for awscli
+      apt:
+        name: "python3-pip"
+        state: latest
+        update_cache: yes
+#    - name: Remove awscli   #for testing handlers
+#      pip:
+#        name: "awscli"
+#        executable: pip3
+#        state: absent    
+
+    - name: Install awscli with pip3
+      pip:
+        name: "awscli"
+        executable: pip3
+      notify:
+        - "Notify that aws is installed"
+        - "Notify that aws is installed. The 2-nd option"
+        
+    - name: Flush handlers
+      meta: flush_handlers
+      
+    - name: copy awscli_installed to S3
+      shell:
+        aws s3 cp /home/ubuntu/awscli_installed s3://vmp-bucket-2021/ansible/
+        
+  handlers:
+    - name: Notify that aws is installed
+      copy:
+        dest: /home/ubuntu/awscli_installed
+        content: |
+          aws was installed at {{ ansible_date_time.iso8601 }}
+          Greate job, fellow!
+          
+    - name: Notify that aws is installed. The 2-nd option
+      shell: "echo aws is installed at `date` >> /home/ubuntu/awscli_installed2"  
+#    apt: unzip
+#    shell:
+#      cmd: 
+#-Второй play создает скрипт на хосте или копирует скрипт с мастер ноды на хост, данный скрипт создает файл с именем “second_play_execution”в домашней директории юзера ubuntu
+- name: Update second aws server
+  hosts: aws_second_server
+  become: yes
+  remote_user: ubuntu
+  become_user: root
+  tasks:
+    - name: Notify that aws is installed
+      copy:
+        dest: /home/ubuntu/script.sh
+        owner: ubuntu
+        group: ubuntu
+        mode: u+x
+        content: |
+          #!/bin/bash
+          PATH="/home/ubuntu"
+          touch ${PATH}/second_play_execution
+  tags:
+    - play_it
+#-Третий play устанавливает CloudWatch агент и использует handler для того, чтобы запустить его как сервис
+- name: Update both AWS servers
+  hosts: aws_servers
+  become: yes
+  remote_user: ubuntu
+  become_user: root
+  tasks:
+    - name: install cloudwatch agent
+      apt:
+        deb: https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+#    - name: create cfg for cloudwatch
+#      shell: aws s3 cp s3://vmp-bucket-2021/ansible/amazon-cloudwatch-agent.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+      notify:
+        - "Run cloudwatch"
+        - "Run cloudwatch as a service"
+  
+  handlers:
+    - name: Run cloudwatch
+      shell: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+      
+    - name: Run cloudwatch as a service
+      systemd:
+        name: amazon-cloudwatch-agent.service
+        enabled: yes
+        masked: no

@@ -1,0 +1,10 @@
+---
+- name: Echo script_echo variable
+  copy:
+    dest: /home/ubuntu/script2.sh
+    owner: ubuntu
+    group: ubuntu
+    mode: u+x
+    content: |
+      #!/bin/bash
+      echo "{{ script_echo }}"

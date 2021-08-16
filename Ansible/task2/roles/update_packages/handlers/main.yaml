@@ -1,0 +1,14 @@
+---
+- name: Notify that aws is installed
+  copy:
+    dest: /home/ubuntu/awscli_installed
+    content: |
+      aws was installed at {{ ansible_date_time.iso8601 }}
+      Greate job, fellow! 
+     
+- name: Run cloudwatch as a service
+  systemd:
+    name: amazon-cloudwatch-agent.service
+    enabled: yes
+    masked: no
+    

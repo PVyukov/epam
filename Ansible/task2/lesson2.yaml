@@ -1,0 +1,71 @@
+---
+##-Третий play устанавливает CloudWatch агент и использует handler для того, чтобы запустить его как сервис
+# - Update a previous project for Ansible with playbook, inventory folder with inventory file, roles folder
+# - You should do everything that has to be done on both hosts in previous homework, but:
+#     - Create role install_packages and move packages installation to that role (pip, awscli, CloudWatch agent)
+#     - Update all packages on both hosts before running install_packages role
+- name: Update both AWS servers
+  hosts: aws_servers
+  become: yes
+  remote_user: ubuntu
+  become_user: root
+  
+  pre_tasks:
+    - name: Update all packages to their latest version
+      apt:
+        name: "*"
+        force_apt_get: yes
+        state: latest
+        update_cache: yes
+  
+  roles:
+    - role: update_packages
+      
+    
+# -Первый play устанавливает awscli, создает файл с именем “awscli_installed” и с помощью модуля shell кладет созданный файл в S3 бакет
+# - Use aws_s3 module to put a file in the first play
+# - Set the bucket name as a variable in any place that is the best for that in your opinion
+
+- name: Update first aws server
+  hosts: aws_first_server
+  become: yes
+  remote_user: ubuntu
+  become_user: root
+#  gather_facts: no
+  
+  tasks:
+    - name: install boto3
+      pip:
+        name: "boto3"
+        executable: pip3
+
+    - name: copy awscli_installed to S3
+      amazon.aws.aws_s3:
+        bucket: "{{ bucket_name }}"
+        object: /ansible/awscli_installed
+        content: /home/ubuntu/awscli_installed
+        mode: put
+       # aws s3 cp /home/ubuntu/awscli_installed s3://vmp-bucket-2021/ansible/       
+       
+#-Второй play создает скрипт на хосте, данный скрипт создает файл с именем “script2.sh” в домашней директории юзера ubuntu
+# - Use the role to create a script in the second play and template module (не понял для чего это здесь?? использвал template в задании ниже) , the script should echo the variable that is set in role’s vars
+- name: Update second aws server
+  hosts: aws_second_server
+  become: yes
+  remote_user: ubuntu
+  become_user: root
+  
+  roles:
+    - role: create_script
+    
+# - Add creation of file on both hosts, the name of the file depends on the host (names of the file should be different for both hosts)
+# - Organize your plays the way you think is the best by using pre_tasks, post_tasks, tasks and different ways to execute roles
+# - Try to use specific modules instead of shell anywhere it’s possible
+- name: Update both AWS servers again
+  hosts: aws_servers
+  become: yes
+  remote_user: ubuntu
+  become_user: root
+
+  roles:
+    - role: creation_files

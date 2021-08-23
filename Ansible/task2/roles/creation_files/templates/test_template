@@ -1,0 +1,8 @@
+---
+{% if host_name == 'aws_first_server' %}
+first server text
+{% elif host_name == 'aws_second_server' %}
+second server text
+{% else %}
+just_a_file.txt
+{% endif %}

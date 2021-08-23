@@ -1,0 +1,9 @@
+---
+- name: Crete a file according to var <host_name>
+  template:
+   src: 'test_template'
+   dest: '/home/ubuntu/{{ host_name }}'
+
+#  file:
+#    path: /home/ubuntu/"{{ test_template }}"
+#    mode: touch

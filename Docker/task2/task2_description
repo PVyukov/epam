@@ -1,0 +1,14 @@
+Создать docker-compose.yaml добавить туда приложение, которое создали в 1 задании.
+Добавить postgres db в compose.
+Обернуть все в 1 user-defined network.
+Добавить функционал записи данных из приложения - (библиотека для работы с базой данных - 
+psycopg2 можете использовать, что-то другое), запись происходит в момент открытия/обновления страницы.
+В базе данных - ожидаю простую таблицу - 
+	ID | VALUE # значение, из первого задания
+	1 | some_value
+	2 | some_value
+
+Доп. материалы(если будете использовать psycopg2): 
+Установление связи с бд с psycopg - https://www.postgresqltutorial.com/postgresql-python/connect/
+Создание таблицы - https://www.postgresqltutorial.com/postgresql-python/create-tables/
+Запись данных - https://www.postgresqltutorial.com/postgresql-python/insert/
